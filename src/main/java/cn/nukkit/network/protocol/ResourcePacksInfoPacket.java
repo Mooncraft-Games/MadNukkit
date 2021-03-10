@@ -38,7 +38,9 @@ public class ResourcePacksInfoPacket extends DataPacket {
             this.putString(""); // sub-pack name
             this.putString(""); // content identity
             this.putBoolean(false); // scripting
-            this.putBoolean(false); // raytracing capable
+            if (this.protocol >= ProtocolInfo.PROTOCOL_VERSION_1_16_200) {
+                this.putBoolean(false); // raytracing capable
+            }
         }
     }
 

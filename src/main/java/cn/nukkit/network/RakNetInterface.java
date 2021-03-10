@@ -217,6 +217,7 @@ public class RakNetInterface implements RakNetServerListener, AdvancedSourceInte
         NukkitRakNetSession session = this.sessions.get(player.getSocketAddress());
 
         if (session != null) {
+            packet.setProtocolVersion(player.getProtocolVersion());
             packet.tryEncode();
             session.outbound.offer(packet);
         }
@@ -258,7 +259,7 @@ public class RakNetInterface implements RakNetServerListener, AdvancedSourceInte
         private final Queue<DataPacket> inbound = PlatformDependent.newSpscQueue();
         private final Queue<DataPacket> outbound = PlatformDependent.newMpscQueue();
         private String disconnectReason = null;
-        private Player player;
+        private Player player = null;
 
         @Override
         public void onSessionChangeState(RakNetState rakNetState) {
@@ -281,8 +282,9 @@ public class RakNetInterface implements RakNetServerListener, AdvancedSourceInte
                 byte[] packetBuffer = new byte[buffer.readableBytes()];
                 buffer.readBytes(packetBuffer);
 
+                int protocol = this.player == null ? 0 : this.player.getProtocolVersion();
                 try {
-                    RakNetInterface.this.network.processBatch(packetBuffer, this.inbound);
+                    RakNetInterface.this.network.processBatch(packetBuffer, this.inbound, protocol);
                 } catch (ProtocolException e) {
                     this.disconnect("Sent malformed packet");
                     log.error("Unable to process batch packet", e);

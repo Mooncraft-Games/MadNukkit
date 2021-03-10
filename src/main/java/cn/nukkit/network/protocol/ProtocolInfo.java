@@ -2,6 +2,7 @@ package cn.nukkit.network.protocol;
 
 import com.google.common.primitives.Ints;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -16,7 +17,9 @@ public interface ProtocolInfo {
     @SuppressWarnings("UnnecessaryBoxing")
     int CURRENT_PROTOCOL = Integer.valueOf("422"); // DO NOT REMOVE BOXING
 
-    List<Integer> SUPPORTED_PROTOCOLS = Ints.asList(CURRENT_PROTOCOL);
+    List<Integer> SUPPORTED_PROTOCOLS = Arrays.asList(CURRENT_PROTOCOL, 419);
+
+    int PROTOCOL_VERSION_1_16_200 = 422;
 
     String MINECRAFT_VERSION = "v1.16.200";
     String MINECRAFT_VERSION_NETWORK = "1.16.200";

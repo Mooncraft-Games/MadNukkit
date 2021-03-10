@@ -176,6 +176,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     protected String iusername;
     protected String displayName;
 
+    protected int protocolVersion;
+
     protected int startAction = -1;
 
     protected Vector3 sleeping = null;
@@ -2029,7 +2031,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 this.level.getName(),
                 String.valueOf(NukkitMath.round(this.x, 4)),
                 String.valueOf(NukkitMath.round(this.y, 4)),
-                String.valueOf(NukkitMath.round(this.z, 4))));
+                String.valueOf(NukkitMath.round(this.z, 4))) + String.format(" [v%s]", this.getProtocolVersion()));
 
         if (this.isOp() || this.hasPermission("nukkit.textcolor")) {
             this.setRemoveFormat(false);
@@ -2069,6 +2071,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                     LoginPacket loginPacket = (LoginPacket) packet;
 
+                    this.protocolVersion = loginPacket.protocol;
                     String message;
                     if (!ProtocolInfo.SUPPORTED_PROTOCOLS.contains(loginPacket.getProtocol())) {
                         if (loginPacket.getProtocol() < ProtocolInfo.CURRENT_PROTOCOL) {
@@ -4909,6 +4912,10 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         pk.address = hostName;
         pk.port = port;
         this.dataPacket(pk);
+    }
+
+    public int getProtocolVersion() {
+        return this.protocolVersion;
     }
 
     public LoginChainData getLoginChainData() {
