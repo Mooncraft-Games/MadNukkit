@@ -141,13 +141,17 @@ public class StartGamePacket extends DataPacket {
         this.putString(this.worldName);
         this.putString(this.premiumWorldTemplateId);
         this.putBoolean(this.isTrial);
-        this.putUnsignedVarInt(this.isMovementServerAuthoritative ? 1 : 0); // 2 - rewind
-        this.putVarInt(0); // RewindHistorySize
-        this.putBoolean(false); // isServerAuthoritativeBlockBreaking
+        if (this.protocol >= ProtocolInfo.PROTOCOL_VERSION_1_16_210) {
+            this.putUnsignedVarInt(this.isMovementServerAuthoritative ? 1 : 0); // 2 - rewind
+            this.putVarInt(0); // RewindHistorySize
+            this.putBoolean(false); // isServerAuthoritativeBlockBreaking
+        } else {
+            this.putVarInt(this.isMovementServerAuthoritative ? 1 : 0);
+        }
         this.putLLong(this.currentTick);
         this.putVarInt(this.enchantmentSeed);
         this.putUnsignedVarInt(0); // Custom blocks
-        this.put(RuntimeItems.getRuntimeMapping().getItemDataPalette());
+        this.put(RuntimeItems.getRuntimeMapping(this.protocol).getItemDataPalette());
         this.putString(this.multiplayerCorrelationId);
         this.putBoolean(this.isInventoryServerAuthoritative);
     }

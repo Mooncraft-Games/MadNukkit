@@ -5,6 +5,7 @@ import cn.nukkit.item.RuntimeItems;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.network.protocol.DataPacket;
 import cn.nukkit.network.protocol.LevelEventPacket;
+import cn.nukkit.network.protocol.ProtocolInfo;
 
 /**
  * Created on 2015/11/21 by xtypr.
@@ -16,7 +17,7 @@ public class ItemBreakParticle extends Particle {
 
     public ItemBreakParticle(Vector3 pos, Item item) {
         super(pos.x, pos.y, pos.z);
-        int networkFullId = RuntimeItems.getRuntimeMapping().getNetworkFullId(item);
+        int networkFullId = RuntimeItems.getRuntimeMapping(ProtocolInfo.CURRENT_PROTOCOL).getNetworkFullId(item);
         int networkId = RuntimeItems.getNetworkId(networkFullId);
         this.data = (networkId << 16 | item.getDamage());
     }

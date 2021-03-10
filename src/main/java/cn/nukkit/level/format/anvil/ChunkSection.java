@@ -6,6 +6,7 @@ import cn.nukkit.level.format.anvil.util.NibbleArray;
 import cn.nukkit.level.format.generic.EmptyChunkSection;
 import cn.nukkit.level.util.PalettedBlockStorage;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.utils.*;
 
 import java.io.IOException;
@@ -318,10 +319,15 @@ public class ChunkSection implements cn.nukkit.level.format.ChunkSection {
 
     @Override
     public void writeTo(BinaryStream stream) {
+        writeTo(stream, ProtocolInfo.CURRENT_PROTOCOL);
+    }
+
+    @Override
+    public void writeTo(BinaryStream stream, int protocol) {
         synchronized (storage) {
             stream.putByte((byte) 8); // Paletted chunk because Mojang messed up the old one
             stream.putByte((byte) 2);
-            this.storage.writeTo(stream);
+            this.storage.writeTo(stream, protocol);
             EMPTY_STORAGE.writeTo(stream);
         }
     }

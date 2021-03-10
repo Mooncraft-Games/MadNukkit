@@ -106,8 +106,8 @@ public class NetworkInventoryAction {
         }
 
         this.inventorySlot = (int) packet.getUnsignedVarInt();
-        this.oldItem = packet.getSlot();
-        this.newItem = packet.getSlot();
+        this.oldItem = packet.getSlot(packet.getProtocolVersion());
+        this.newItem = packet.getSlot(packet.getProtocolVersion());
 
         if (packet.hasNetworkIds) {
             this.stackNetworkId = packet.getVarInt();
@@ -132,8 +132,8 @@ public class NetworkInventoryAction {
         }
 
         packet.putUnsignedVarInt(this.inventorySlot);
-        packet.putSlot(this.oldItem);
-        packet.putSlot(this.newItem);
+        packet.putSlot(this.oldItem, packet.getProtocolVersion());
+        packet.putSlot(this.newItem, packet.getProtocolVersion());
 
         if (packet.hasNetworkIds) {
             packet.putVarInt(this.stackNetworkId);

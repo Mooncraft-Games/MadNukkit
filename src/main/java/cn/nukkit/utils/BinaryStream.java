@@ -14,6 +14,7 @@ import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.nbt.tag.StringTag;
+import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.network.protocol.types.EntityLink;
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 
@@ -259,9 +260,11 @@ public class BinaryStream {
         return Binary.readUUID(this.get(16));
     }
 
-    public void putSkin(Skin skin) {
+    public void putSkin(Skin skin, int protocol) {
         this.putString(skin.getSkinId());
-        this.putString(skin.getPlayFabId());
+        if (protocol >= ProtocolInfo.PROTOCOL_VERSION_1_16_210) {
+            this.putString(skin.getPlayFabId());
+        }
         this.putString(skin.getSkinResourcePatch());
         this.putImage(skin.getSkinData());
 
@@ -306,10 +309,12 @@ public class BinaryStream {
         }
     }
 
-    public Skin getSkin() {
+    public Skin getSkin(int protocol) {
         Skin skin = new Skin();
         skin.setSkinId(this.getString());
-        skin.setPlayFabId(this.getString());
+        if (protocol >= ProtocolInfo.PROTOCOL_VERSION_1_16_210) {
+            skin.setPlayFabId(this.getString());
+        }
         skin.setSkinResourcePatch(this.getString());
         skin.setSkinData(this.getImage());
 
@@ -369,13 +374,13 @@ public class BinaryStream {
         return new SerializedImage(width, height, data);
     }
 
-    public Item getSlot() {
+    public Item getSlot(int protocol) {
         int networkId = this.getVarInt();
         if (networkId == 0) {
             return Item.get(0, 0, 0);
         }
 
-        int legacyFullId = RuntimeItems.getRuntimeMapping().getLegacyFullId(networkId);
+        int legacyFullId = RuntimeItems.getRuntimeMapping(protocol).getLegacyFullId(networkId);
         int id = RuntimeItems.getId(legacyFullId);
         boolean hasData = RuntimeItems.hasData(legacyFullId);
 
@@ -464,13 +469,13 @@ public class BinaryStream {
         return item;
     }
 
-    public void putSlot(Item item) {
+    public void putSlot(Item item, int protocol) {
         if (item == null || item.getId() == 0) {
             this.putVarInt(0);
             return;
         }
 
-        int networkFullId = RuntimeItems.getRuntimeMapping().getNetworkFullId(item);
+        int networkFullId = RuntimeItems.getRuntimeMapping(protocol).getNetworkFullId(item);
         int networkId = RuntimeItems.getNetworkId(networkFullId);
         boolean clearData = RuntimeItems.hasData(networkFullId);
         this.putVarInt(networkId);
@@ -525,13 +530,13 @@ public class BinaryStream {
         }
     }
 
-    public Item getRecipeIngredient() {
+    public Item getRecipeIngredient(int protocol) {
         int networkId = this.getVarInt();
         if (networkId == 0) {
             return Item.get(0, 0, 0);
         }
 
-        int legacyFullId = RuntimeItems.getRuntimeMapping().getLegacyFullId(networkId);
+        int legacyFullId = RuntimeItems.getRuntimeMapping(protocol).getLegacyFullId(networkId);
         int id = RuntimeItems.getId(legacyFullId);
         boolean hasData = RuntimeItems.hasData(legacyFullId);
 
@@ -546,13 +551,13 @@ public class BinaryStream {
         return Item.get(id, damage, count);
     }
 
-    public void putRecipeIngredient(Item ingredient) {
+    public void putRecipeIngredient(Item ingredient, int protocol) {
         if (ingredient == null || ingredient.getId() == 0) {
             this.putVarInt(0);
             return;
         }
 
-        int networkFullId = RuntimeItems.getRuntimeMapping().getNetworkFullId(ingredient);
+        int networkFullId = RuntimeItems.getRuntimeMapping(protocol).getNetworkFullId(ingredient);
         int networkId = RuntimeItems.getNetworkId(networkFullId);
         int damage = ingredient.hasMeta() ? ingredient.getDamage() : 0x7fff;
         if (RuntimeItems.hasData(networkFullId)) {

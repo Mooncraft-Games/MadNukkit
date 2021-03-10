@@ -78,10 +78,10 @@ public class CraftingDataPacket extends DataPacket {
                     List<Item> ingredients = shapeless.getIngredientList();
                     this.putUnsignedVarInt(ingredients.size());
                     for (Item ingredient : ingredients) {
-                        this.putRecipeIngredient(ingredient);
+                        this.putRecipeIngredient(ingredient, this.protocol);
                     }
                     this.putUnsignedVarInt(1);
-                    this.putSlot(shapeless.getResult());
+                    this.putSlot(shapeless.getResult(), this.protocol);
                     this.putUUID(shapeless.getId());
                     this.putString(CRAFTING_TAG_CRAFTING_TABLE);
                     this.putVarInt(shapeless.getPriority());
@@ -95,7 +95,7 @@ public class CraftingDataPacket extends DataPacket {
 
                     for (int z = 0; z < shaped.getHeight(); ++z) {
                         for (int x = 0; x < shaped.getWidth(); ++x) {
-                            this.putRecipeIngredient(shaped.getIngredient(x, z));
+                            this.putRecipeIngredient(shaped.getIngredient(x, z), this.protocol);
                         }
                     }
                     List<Item> outputs = new ArrayList<>();
@@ -103,7 +103,7 @@ public class CraftingDataPacket extends DataPacket {
                     outputs.addAll(shaped.getExtraResults());
                     this.putUnsignedVarInt(outputs.size());
                     for (Item output : outputs) {
-                        this.putSlot(output);
+                        this.putSlot(output, this.protocol);
                     }
                     this.putUUID(shaped.getId());
                     this.putString(CRAFTING_TAG_CRAFTING_TABLE);
@@ -118,7 +118,7 @@ public class CraftingDataPacket extends DataPacket {
                     if (recipe.getType() == RecipeType.FURNACE_DATA) {
                         this.putVarInt(input.getDamage());
                     }
-                    this.putSlot(furnace.getResult());
+                    this.putSlot(furnace.getResult(), this.protocol);
                     this.putString(CRAFTING_TAG_FURNACE);
                     break;
                 case MULTI:

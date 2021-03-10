@@ -5,27 +5,35 @@ import com.google.common.io.ByteStreams;
 import lombok.ToString;
 
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 @ToString(exclude = "tag")
 public class BiomeDefinitionListPacket extends DataPacket {
     public static final byte NETWORK_ID = ProtocolInfo.BIOME_DEFINITION_LIST_PACKET;
 
-    private static final byte[] TAG;
+    private static final Map<Integer, byte[]> PROTOCOL_TAGS = new HashMap<>();
 
-    static {
+    public static void loadDefinitions(int protocol) {
         try {
-            InputStream inputStream = Nukkit.class.getClassLoader().getResourceAsStream("biome_definitions.dat");
+            InputStream inputStream = Nukkit.class.getClassLoader().getResourceAsStream(String.format("versions/v%s/biome_definitions.dat", protocol));
             if (inputStream == null) {
-                throw new AssertionError("Could not find biome_definitions.dat");
+                throw new AssertionError(String.format("Could not find biome_definitions.dat [v%s]", protocol));
             }
             //noinspection UnstableApiUsage
-            TAG = ByteStreams.toByteArray(inputStream);
+            PROTOCOL_TAGS.put(protocol, ByteStreams.toByteArray(inputStream));
         } catch (Exception e) {
-            throw new AssertionError("Error whilst loading biome_definitions.dat", e);
+            throw new AssertionError(String.format("Error whilst loading biome_definitions.dat [v%s]", protocol), e);
         }
     }
 
-    public byte[] tag = TAG;
+    public byte[] tag;
+
+    @Override
+    public void setProtocolVersion(int protocol) {
+        super.setProtocolVersion(protocol);
+        tag = PROTOCOL_TAGS.get(protocol);
+    }
 
     @Override
     public byte pid() {

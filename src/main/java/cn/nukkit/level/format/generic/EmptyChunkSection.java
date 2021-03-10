@@ -142,6 +142,11 @@ public class EmptyChunkSection implements ChunkSection {
     }
 
     @Override
+    public void writeTo(BinaryStream stream, int protocol) {
+        this.writeTo(stream);
+    }
+
+    @Override
     public EmptyChunkSection copy() {
         return this;
     }

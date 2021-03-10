@@ -334,6 +334,10 @@ public class Level implements ChunkManager, Metadatable {
         this.chunkTickList.clear();
         this.clearChunksOnTick = this.server.getConfig("chunk-ticking.clear-tick-list", true);
         this.cacheChunks = this.server.getConfig("chunk-sending.cache-chunks", false);
+        if (this.cacheChunks) {
+            // TODO
+            this.server.getLogger().warning("BlockPalettes are currently messed up with cached chunks. BEWARE");
+        }
         this.temporalPosition = new Position(0, 0, 0, this);
         this.temporalVector = new Vector3(0, 0, 0);
         this.tickRate = 1;
@@ -1038,47 +1042,51 @@ public class Level implements ChunkManager, Metadatable {
         for (Vector3 block : blocks) {
             if (block != null) size++;
         }
-        int packetIndex = 0;
-        UpdateBlockPacket[] packets = new UpdateBlockPacket[size];
-        LongSet chunks = null;
-        if (optimizeRebuilds) {
-            chunks = new LongOpenHashSet();
-        }
-        for (Vector3 b : blocks) {
-            if (b == null) {
-                continue;
-            }
-            boolean first = !optimizeRebuilds;
 
+        for (Player player : target) {
+            int packetIndex = 0;
+            UpdateBlockPacket[] packets = new UpdateBlockPacket[size];
+            LongSet chunks = null;
             if (optimizeRebuilds) {
-                long index = Level.chunkHash((int) b.x >> 4, (int) b.z >> 4);
-                if (!chunks.contains(index)) {
-                    chunks.add(index);
-                    first = true;
-                }
+                chunks = new LongOpenHashSet();
             }
 
-            UpdateBlockPacket updateBlockPacket = new UpdateBlockPacket();
-            updateBlockPacket.x = (int) b.x;
-            updateBlockPacket.y = (int) b.y;
-            updateBlockPacket.z = (int) b.z;
-            updateBlockPacket.flags = first ? flags : UpdateBlockPacket.FLAG_NONE;
-            updateBlockPacket.dataLayer = dataLayer;
-            int fullId;
-            if (b instanceof Block) {
-                fullId = ((Block) b).getFullId();
-            } else {
-                fullId = getFullBlock((int) b.x, (int) b.y, (int) b.z);
+            for (Vector3 b : blocks) {
+                if (b == null) {
+                    continue;
+                }
+                boolean first = !optimizeRebuilds;
+
+                if (optimizeRebuilds) {
+                    long index = Level.chunkHash((int) b.x >> 4, (int) b.z >> 4);
+                    if (!chunks.contains(index)) {
+                        chunks.add(index);
+                        first = true;
+                    }
+                }
+
+                UpdateBlockPacket updateBlockPacket = new UpdateBlockPacket();
+                updateBlockPacket.x = (int) b.x;
+                updateBlockPacket.y = (int) b.y;
+                updateBlockPacket.z = (int) b.z;
+                updateBlockPacket.flags = first ? flags : UpdateBlockPacket.FLAG_NONE;
+                updateBlockPacket.dataLayer = dataLayer;
+                int fullId;
+                if (b instanceof Block) {
+                    fullId = ((Block) b).getFullId();
+                } else {
+                    fullId = getFullBlock((int) b.x, (int) b.y, (int) b.z);
+                }
+                try {
+                    updateBlockPacket.blockRuntimeId = GlobalBlockPalette.getOrCreateRuntimeId(player.getProtocolVersion(), fullId);
+                } catch (NoSuchElementException e) {
+                    throw new IllegalStateException("Unable to create BlockUpdatePacket at (" +
+                            b.x + ", " + b.y + ", " + b.z + ") in " + getName(), e);
+                }
+                packets[packetIndex++] = updateBlockPacket;
             }
-            try {
-                updateBlockPacket.blockRuntimeId = GlobalBlockPalette.getOrCreateRuntimeId(fullId);
-            } catch (NoSuchElementException e) {
-                throw new IllegalStateException("Unable to create BlockUpdatePacket at (" +
-                        b.x + ", " + b.y + ", " + b.z + ") in " + getName(), e);
-            }
-            packets[packetIndex++] = updateBlockPacket;
+            this.server.batchPackets(new Player[]{ player }, packets);
         }
-        this.server.batchPackets(target, packets);
     }
 
     private void tickChunks() {
@@ -2214,7 +2222,7 @@ public class Level implements ChunkManager, Metadatable {
         }
 
         if (playSound) {
-            this.addLevelSoundEvent(hand, LevelSoundEventPacket.SOUND_PLACE, GlobalBlockPalette.getOrCreateRuntimeId(hand.getId(), hand.getDamage()));
+            this.addLevelSoundEvent(hand, LevelSoundEventPacket.SOUND_PLACE, GlobalBlockPalette.getOrCreateRuntimeId(ProtocolInfo.CURRENT_PROTOCOL, hand.getId(), hand.getDamage()));
         }
 
         if (item.getCount() <= 0) {
@@ -2690,12 +2698,12 @@ public class Level implements ChunkManager, Metadatable {
         this.timings.syncChunkSendTimer.stopTiming();
     }
 
-    public void chunkRequestCallback(long timestamp, int x, int z, int subChunkCount, byte[] payload) {
+    public void chunkRequestCallback(long timestamp, int x, int z, int subChunkCount, Map<Integer, byte[]> protocolChunks) {
         this.timings.syncChunkSendTimer.startTiming();
         long index = Level.chunkHash(x, z);
 
         if (this.cacheChunks) {
-            BatchPacket data = Player.getChunkCacheFromData(x, z, subChunkCount, payload);
+            BatchPacket data = Player.getChunkCacheFromData(x, z, subChunkCount, protocolChunks.get(ProtocolInfo.CURRENT_PROTOCOL));
             BaseFullChunk chunk = getChunk(x, z, false);
             if (chunk != null && chunk.getChanges() <= timestamp) {
                 chunk.setChunkPacket(data);
@@ -2708,7 +2716,8 @@ public class Level implements ChunkManager, Metadatable {
         if (this.chunkSendTasks.contains(index)) {
             for (Player player : this.chunkSendQueue.get(index).values()) {
                 if (player.isConnected() && player.usedChunks.containsKey(index)) {
-                    player.sendChunk(x, z, subChunkCount, payload);
+                    // TODO: change payload to differ depending on protocol required
+                    player.sendChunk(x, z, subChunkCount, protocolChunks.get(player.getProtocolVersion()));
                 }
             }
 

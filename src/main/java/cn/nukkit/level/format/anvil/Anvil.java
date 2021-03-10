@@ -10,6 +10,7 @@ import cn.nukkit.level.format.generic.BaseRegionLoader;
 import cn.nukkit.level.generator.Generator;
 import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.scheduler.AsyncTask;
 import cn.nukkit.utils.BinaryStream;
 import cn.nukkit.utils.ChunkException;
@@ -141,15 +142,25 @@ public class Anvil extends BaseLevelProvider {
             }
         }
 
-        for (int i = 0; i < count; i++) {
-            sections[i].writeTo(stream);
+        byte[] baseInitStream = stream.getBuffer();
+
+        Map<Integer, byte[]> protocolChunks = new HashMap<>();
+        for (int protocol : ProtocolInfo.SUPPORTED_PROTOCOLS) {
+            BinaryStream protocolStream = ThreadCache.binaryStream.get().reset();
+            protocolStream.setBuffer(baseInitStream);
+            for (int i = 0; i < count; i++) {
+                sections[i].writeTo(protocolStream, protocol);
+            }
+
+            protocolStream.put(chunk.getBiomeIdArray());
+            protocolStream.putByte((byte) 0); // Border blocks
+            protocolStream.put(blockEntities);
+
+            protocolChunks.put(protocol, protocolStream.get());
         }
 
-        stream.put(chunk.getBiomeIdArray());
-        stream.putByte((byte) 0); // Border blocks
-        stream.put(blockEntities);
-
-        this.getLevel().chunkRequestCallback(timestamp, x, z, count, stream.getBuffer());
+        // TODO: chunkRequestCallback with the map
+        this.getLevel().chunkRequestCallback(timestamp, x, z, count, protocolChunks);
 
         return null;
     }

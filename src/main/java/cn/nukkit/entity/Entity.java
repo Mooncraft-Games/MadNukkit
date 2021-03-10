@@ -28,6 +28,7 @@ import cn.nukkit.potion.Effect;
 import cn.nukkit.scheduler.Task;
 import cn.nukkit.utils.ChunkException;
 import cn.nukkit.utils.MainLogger;
+import cn.nukkit.utils.ProtocolEntityDataModifier;
 import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
 import co.aikar.timings.TimingsHistory;
@@ -278,6 +279,23 @@ public abstract class Entity extends Location implements Metadatable {
     public static final int DATA_FLAG_ADMIRING = 93;
     public static final int DATA_FLAG_CELEBRATING_SPECIAL = 94;
     public static final int DATA_FLAG_RAM_ATTACK = 96;
+
+    // Protocol : Changes needed to change upper version entity data to this version
+    // IMPORTANT: It is essential that each version links to the next.
+    private static final Map<Integer, ProtocolEntityDataModifier> protocolEntityDataModifiers;
+
+    static {
+        Map<Integer, ProtocolEntityDataModifier> entityDataModifiers = new HashMap<>();
+        entityDataModifiers.put(ProtocolInfo.CURRENT_PROTOCOL, new ProtocolEntityDataModifier(ProtocolInfo.PROTOCOL_VERSION_1_16_200));
+        entityDataModifiers.put(
+                ProtocolInfo.PROTOCOL_VERSION_1_16_200,
+                new ProtocolEntityDataModifier(ProtocolInfo.PROTOCOL_VERSION_1_16_100)
+                    .remap(81, 80)  // DATA_ALWAYS_SHOW_NAMETAG
+                    .remap(84, 83)  // DATA_SCORE_TAG
+        );
+
+        protocolEntityDataModifiers = Collections.unmodifiableMap(entityDataModifiers);
+    }
 
     public static long entityCount = 1;
 
@@ -1043,7 +1061,7 @@ public abstract class Entity extends Location implements Metadatable {
     public void sendData(Player player, EntityMetadata data) {
         SetEntityDataPacket pk = new SetEntityDataPacket();
         pk.eid = this.getId();
-        pk.metadata = data == null ? this.dataProperties : data;
+        pk.metadata = getProtocolMetadata(data == null ? this.dataProperties : data, player.getProtocolVersion());
 
         player.dataPacket(pk);
     }
@@ -1055,17 +1073,55 @@ public abstract class Entity extends Location implements Metadatable {
     public void sendData(Player[] players, EntityMetadata data) {
         SetEntityDataPacket pk = new SetEntityDataPacket();
         pk.eid = this.getId();
-        pk.metadata = data == null ? this.dataProperties : data;
+        EntityMetadata initialPacketData = data == null ? this.dataProperties : data;
 
         for (Player player : players) {
             if (player == this) {
                 continue;
             }
+            pk.metadata = getProtocolMetadata(initialPacketData, player.getProtocolVersion());
             player.dataPacket(pk.clone());
         }
         if (this instanceof Player) {
+            pk.metadata = getProtocolMetadata(initialPacketData, ((Player)this).getProtocolVersion());
             ((Player) this).dataPacket(pk);
         }
+    }
+
+    private static EntityMetadata getProtocolMetadata(EntityMetadata metadata, int targetProtocol) {
+        Map<Integer, EntityData> dataMap = metadata.getMap();
+        int currentProtocol = ProtocolInfo.CURRENT_PROTOCOL;
+        while (currentProtocol != targetProtocol) {
+
+            if (!protocolEntityDataModifiers.containsKey(currentProtocol)) {
+                Server.getInstance().getLogger().error(String.format("Failed to find metadata protocol mappings for v%s. Metadata sent may be incorrect", currentProtocol));
+                break;
+            }
+
+            // Remap values
+            ProtocolEntityDataModifier modifier = protocolEntityDataModifiers.get(currentProtocol);
+            Map<Integer, Integer> remappings = modifier.getRemappings();
+            for (Map.Entry<Integer, Integer> remapLocation : remappings.entrySet()) {
+                int idToChange = remapLocation.getKey();
+                int newId = remapLocation.getValue();
+                if (dataMap.containsKey(idToChange)) {
+                    EntityData data = dataMap.get(idToChange);
+                    data.setId(newId);
+                    dataMap.put(newId, data);
+                    dataMap.remove(idToChange);
+                }
+            }
+
+            currentProtocol = modifier.getPreviousProtocol();
+
+        }
+
+        EntityMetadata returnedEntityData = new EntityMetadata();
+        for (EntityData data : dataMap.values()) {
+            returnedEntityData.put(data);
+        }
+
+        return returnedEntityData;
     }
 
     public void despawnFrom(Player player) {

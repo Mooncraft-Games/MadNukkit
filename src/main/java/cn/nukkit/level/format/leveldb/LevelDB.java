@@ -17,6 +17,7 @@ import cn.nukkit.level.generator.Generator;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.scheduler.AsyncTask;
 import cn.nukkit.utils.*;
 import org.iq80.leveldb.DB;
@@ -205,7 +206,10 @@ public class LevelDB implements LevelProvider {
             }
         }
 
-        this.getLevel().chunkRequestCallback(timestamp, x, z, 16, stream.getBuffer());
+        Map<Integer, byte[]> protocolChunks = new HashMap<>();
+        protocolChunks.put(ProtocolInfo.CURRENT_PROTOCOL, stream.getBuffer());
+
+        this.getLevel().chunkRequestCallback(timestamp, x, z, 16, protocolChunks);
 
         return null;
     }

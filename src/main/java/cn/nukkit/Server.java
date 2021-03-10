@@ -23,6 +23,7 @@ import cn.nukkit.event.server.ServerStopEvent;
 import cn.nukkit.inventory.CraftingManager;
 import cn.nukkit.inventory.Recipe;
 import cn.nukkit.item.Item;
+import cn.nukkit.item.RuntimeItems;
 import cn.nukkit.item.enchantment.Enchantment;
 import cn.nukkit.lang.BaseLang;
 import cn.nukkit.lang.TextContainer;
@@ -55,10 +56,7 @@ import cn.nukkit.network.CompressBatchedTask;
 import cn.nukkit.network.Network;
 import cn.nukkit.network.RakNetInterface;
 import cn.nukkit.network.SourceInterface;
-import cn.nukkit.network.protocol.BatchPacket;
-import cn.nukkit.network.protocol.DataPacket;
-import cn.nukkit.network.protocol.PlayerListPacket;
-import cn.nukkit.network.protocol.ProtocolInfo;
+import cn.nukkit.network.protocol.*;
 import cn.nukkit.network.query.QueryHandler;
 import cn.nukkit.network.rcon.RCON;
 import cn.nukkit.permission.BanEntry;
@@ -475,7 +473,8 @@ public class Server {
         Effect.init();
         Potion.init();
         Attribute.init();
-        GlobalBlockPalette.getOrCreateRuntimeId(0, 0); //Force it to load
+        loadProtocolSupport();
+        GlobalBlockPalette.getOrCreateRuntimeId(ProtocolInfo.CURRENT_PROTOCOL, 0, 0); //Force it to load
 
         // Convert legacy data before plugins get the chance to mess with it.
         try {
@@ -585,6 +584,15 @@ public class Server {
         }
 
         this.start();
+    }
+
+    private static void loadProtocolSupport() {
+        for (int protocol : ProtocolInfo.SUPPORTED_PROTOCOLS) {
+            GlobalBlockPalette.loadPalette(protocol);
+            RuntimeItems.loadPalette(protocol);
+            BiomeDefinitionListPacket.loadDefinitions(protocol);
+            AvailableEntityIdentifiersPacket.loadIdentifiers(protocol);
+        }
     }
 
     public int broadcastMessage(String message) {

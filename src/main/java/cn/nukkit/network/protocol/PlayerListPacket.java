@@ -37,7 +37,7 @@ public class PlayerListPacket extends DataPacket {
                 this.putString(entry.xboxUserId);
                 this.putString(entry.platformChatId);
                 this.putLInt(entry.buildPlatform);
-                this.putSkin(entry.skin);
+                this.putSkin(entry.skin, this.protocol);
                 this.putBoolean(entry.isTeacher);
                 this.putBoolean(entry.isHost);
             }

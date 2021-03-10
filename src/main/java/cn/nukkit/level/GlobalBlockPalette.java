@@ -13,29 +13,40 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Log4j2
 public class GlobalBlockPalette {
-    private static final Int2IntMap legacyToRuntimeId = new Int2IntOpenHashMap();
-    private static final Int2IntMap runtimeIdToLegacy = new Int2IntOpenHashMap();
-    private static final AtomicInteger runtimeIdAllocator = new AtomicInteger(0);
 
-    static {
+    private static final Map<Integer, Int2IntMap> legacyToRuntimeIdProtocols = new HashMap<>();
+    private static final Map<Integer, Int2IntMap> runtimeIdToLegacyProtocols = new HashMap<>();
+    private static final Map<Integer, AtomicInteger> runtimeIdAllocatorProtocols = new HashMap<>();
+
+    public static void loadPalette(int protocol) {
+        legacyToRuntimeIdProtocols.put(protocol, new Int2IntOpenHashMap());
+        runtimeIdToLegacyProtocols.put(protocol, new Int2IntOpenHashMap());
+        runtimeIdAllocatorProtocols.put(protocol, new AtomicInteger(0));
+
+        Int2IntMap legacyToRuntimeId = legacyToRuntimeIdProtocols.get(protocol);
+        Int2IntMap runtimeIdToLegacy = runtimeIdToLegacyProtocols.get(protocol);
+        AtomicInteger runtimeIdAllocator = runtimeIdAllocatorProtocols.get(protocol);
+
         legacyToRuntimeId.defaultReturnValue(-1);
         runtimeIdToLegacy.defaultReturnValue(-1);
 
         ListTag<CompoundTag> tag;
-        try (InputStream stream = Server.class.getClassLoader().getResourceAsStream("runtime_block_states.dat")) {
+        try (InputStream stream = Server.class.getClassLoader().getResourceAsStream(String.format("versions/v%s/runtime_block_states.dat", protocol))) {
             if (stream == null) {
-                throw new AssertionError("Unable to locate block state nbt");
+                throw new AssertionError(String.format("Unable to locate block state nbt [v%s]", protocol));
             }
             //noinspection unchecked
             tag = (ListTag<CompoundTag>) NBTIO.readTag(new ByteArrayInputStream(ByteStreams.toByteArray(stream)), ByteOrder.LITTLE_ENDIAN, false);
         } catch (IOException e) {
-            throw new AssertionError("Unable to load block palette", e);
+            throw new AssertionError(String.format("Unable to load block palette [v%s]", protocol), e);
         }
 
         for (CompoundTag state : tag.getAll()) {
@@ -55,7 +66,10 @@ public class GlobalBlockPalette {
         }
     }
 
-    public static int getOrCreateRuntimeId(int id, int meta) {
+    public static int getOrCreateRuntimeId(int protocol, int id, int meta) {
+        Int2IntMap legacyToRuntimeId = legacyToRuntimeIdProtocols.get(protocol);
+        Int2IntMap runtimeIdToLegacy = runtimeIdToLegacyProtocols.get(protocol);
+        AtomicInteger runtimeIdAllocator = runtimeIdAllocatorProtocols.get(protocol);
         int legacyId = id << 6 | meta;
         int runtimeId = legacyToRuntimeId.get(legacyId);
         if (runtimeId == -1) {
@@ -70,7 +84,7 @@ public class GlobalBlockPalette {
         return runtimeId;
     }
 
-    public static int getOrCreateRuntimeId(int legacyId) throws NoSuchElementException {
-        return getOrCreateRuntimeId(legacyId >> 4, legacyId & 0xf);
+    public static int getOrCreateRuntimeId(int protocol, int legacyId) throws NoSuchElementException {
+        return getOrCreateRuntimeId(protocol, legacyId >> 4, legacyId & 0xf);
     }
 }

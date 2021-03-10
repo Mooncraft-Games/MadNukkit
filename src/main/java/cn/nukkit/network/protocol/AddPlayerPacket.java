@@ -57,7 +57,7 @@ public class AddPlayerPacket extends DataPacket {
         this.putLFloat(this.pitch);
         this.putLFloat(this.yaw); //TODO headrot
         this.putLFloat(this.yaw);
-        this.putSlot(this.item);
+        this.putSlot(this.item, this.protocol);
         this.put(Binary.writeMetadata(this.metadata));
         this.putUnsignedVarInt(0); //TODO: Adventure settings
         this.putUnsignedVarInt(0);

@@ -1,6 +1,7 @@
 package cn.nukkit.item;
 
 import cn.nukkit.Server;
+import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.utils.BinaryStream;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -16,6 +17,8 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @UtilityClass
 public class RuntimeItems {
@@ -23,13 +26,12 @@ public class RuntimeItems {
     private static final Gson GSON = new Gson();
     private static final Type ENTRY_TYPE = new TypeToken<ArrayList<Entry>>(){}.getType();
 
-    private static final RuntimeItemMapping itemPalette;
+    private static final Map<Integer ,RuntimeItemMapping> protocolItemPalettes = new HashMap<>();
 
-    static {
-        Server.getInstance().getLogger().debug("Loading runtime items...");
-        InputStream stream = Server.class.getClassLoader().getResourceAsStream("runtime_item_ids.json");
+    public static void loadPalette(int protocol) {
+        InputStream stream = Server.class.getClassLoader().getResourceAsStream(String.format("versions/v%s/runtime_item_ids.json", protocol));
         if (stream == null) {
-            throw new AssertionError("Unable to load runtime_item_ids.json");
+            throw new AssertionError(String.format("Unable to load runtime_item_ids.json [v%s]", protocol));
         }
 
         InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
@@ -53,11 +55,11 @@ public class RuntimeItems {
         }
 
         byte[] itemDataPalette = paletteBuffer.getBuffer();
-        itemPalette = new RuntimeItemMapping(itemDataPalette, legacyNetworkMap, networkLegacyMap);
+        protocolItemPalettes.put(protocol, new RuntimeItemMapping(itemDataPalette, legacyNetworkMap, networkLegacyMap));
     }
 
-    public static RuntimeItemMapping getRuntimeMapping() {
-        return itemPalette;
+    public static RuntimeItemMapping getRuntimeMapping(int protocol) {
+        return protocolItemPalettes.getOrDefault(protocol, protocolItemPalettes.get(ProtocolInfo.CURRENT_PROTOCOL));
     }
 
     public static int getId(int fullId) {
