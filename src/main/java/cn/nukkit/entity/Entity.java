@@ -290,8 +290,8 @@ public abstract class Entity extends Location implements Metadatable {
         entityDataModifiers.put(
                 ProtocolInfo.PROTOCOL_VERSION_1_16_200,
                 new ProtocolEntityDataModifier(ProtocolInfo.PROTOCOL_VERSION_1_16_100)
-                    .remap(81, 80)  // DATA_ALWAYS_SHOW_NAMETAG
-                    .remap(84, 83)  // DATA_SCORE_TAG
+                    .remap(DATA_ALWAYS_SHOW_NAMETAG, 80)
+                    .remap(DATA_SCORE_TAG, 83)
         );
 
         protocolEntityDataModifiers = Collections.unmodifiableMap(entityDataModifiers);
@@ -1105,10 +1105,17 @@ public abstract class Entity extends Location implements Metadatable {
                 int idToChange = remapLocation.getKey();
                 int newId = remapLocation.getValue();
                 if (dataMap.containsKey(idToChange)) {
+                    Class<? extends EntityData> dataType = dataMap.get(idToChange).getClass();
                     EntityData data = dataMap.get(idToChange);
-                    data.setId(newId);
-                    dataMap.put(newId, data);
+                    EntityData newData;
+                    try {
+                        newData = (EntityData)dataType.getDeclaredConstructors()[0].newInstance(newId, data.getData());
+                    } catch (Exception exception) {
+                        Server.getInstance().getLogger().error(String.format("Failed to remap metadata [v%s] (%s > %s)", currentProtocol, idToChange, newId), exception);
+                        continue;
+                    }
                     dataMap.remove(idToChange);
+                    dataMap.put(newId, newData);
                 }
             }
 
