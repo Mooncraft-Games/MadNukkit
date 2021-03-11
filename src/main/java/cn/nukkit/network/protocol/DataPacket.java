@@ -15,7 +15,7 @@ public abstract class DataPacket extends BinaryStream implements Cloneable {
     public volatile boolean isEncoded = false;
     private int channel = 0;
 
-    protected int protocol;
+    protected int protocol = -1;
 
     public RakNetReliability reliability = RakNetReliability.RELIABLE_ORDERED;
 

@@ -16,7 +16,7 @@ public class BoneMealParticle extends Particle {
     }
 
     @Override
-    public DataPacket[] encode() {
+    public DataPacket[] encode(int[] protocols) {
         LevelEventPacket pk = new LevelEventPacket();
         pk.evid = LevelEventPacket.EVENT_PARTICLE_BONEMEAL;
         pk.x = (float) this.x;

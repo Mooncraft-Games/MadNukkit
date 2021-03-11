@@ -24,14 +24,20 @@ public class DestroyBlockParticle extends Particle {
     }
 
     @Override
-    public DataPacket[] encode() {
-        LevelEventPacket pk = new LevelEventPacket();
-        pk.evid = LevelEventPacket.EVENT_PARTICLE_DESTROY;
-        pk.x = (float) this.x;
-        pk.y = (float) this.y;
-        pk.z = (float) this.z;
-        pk.data = GlobalBlockPalette.getOrCreateRuntimeId(ProtocolInfo.CURRENT_PROTOCOL, this.block.getId(), this.block.getDamage());
+    public DataPacket[] encode(int[] protocols) {
+        DataPacket[] packets = new DataPacket[protocols.length];
+        int index = 0;
+        for (int protocol : protocols) {
+            LevelEventPacket pk = new LevelEventPacket();
+            pk.setProtocolVersion(protocol);
+            pk.evid = LevelEventPacket.EVENT_PARTICLE_DESTROY;
+            pk.x = (float) this.x;
+            pk.y = (float) this.y;
+            pk.z = (float) this.z;
+            pk.data = GlobalBlockPalette.getOrCreateRuntimeId(protocol, this.block.getId(), this.block.getDamage());
+            packets[index++] = pk;
+        }
 
-        return new DataPacket[]{pk};
+        return packets;
     }
 }

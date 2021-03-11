@@ -22,7 +22,7 @@ public class PunchBlockParticle extends Particle {
     }
 
     @Override
-    public DataPacket[] encode() {
+    public DataPacket[] encode(int[] protocols) {
         LevelEventPacket pk = new LevelEventPacket();
         pk.evid = LevelEventPacket.EVENT_PARTICLE_PUNCH_BLOCK;
         pk.x = (float) this.x;

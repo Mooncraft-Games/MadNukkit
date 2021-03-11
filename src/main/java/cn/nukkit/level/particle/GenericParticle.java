@@ -25,7 +25,7 @@ public class GenericParticle extends Particle {
     }
 
     @Override
-    public DataPacket[] encode() {
+    public DataPacket[] encode(int[] protocols) {
         LevelEventPacket pk = new LevelEventPacket();
         pk.evid = (short) (LevelEventPacket.EVENT_ADD_PARTICLE_MASK | this.id);
         pk.x = (float) this.x;

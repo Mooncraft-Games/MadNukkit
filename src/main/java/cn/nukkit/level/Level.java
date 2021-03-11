@@ -547,7 +547,22 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public void addParticle(Particle particle, Player[] players) {
-        DataPacket[] packets = particle.encode();
+        int[] protocols;
+        if (players != null) {
+            List<Integer> playerProtocols = new ArrayList<>();
+            for (Player p : players) {
+                if (!playerProtocols.contains(p.getProtocolVersion())) {
+                    playerProtocols.add(p.getProtocolVersion());
+                }
+            }
+            protocols = new int[playerProtocols.size()];
+            for (int index = 0; index < playerProtocols.size(); index++) {
+                protocols[index] = playerProtocols.get(index);
+            }
+        } else {
+            protocols = new int[]{ProtocolInfo.CURRENT_PROTOCOL};
+        }
+        DataPacket[] packets = particle.encode(protocols);
 
         if (players == null) {
             if (packets != null) {
@@ -897,7 +912,12 @@ public class Level implements ChunkManager, Metadatable {
                 Player[] chunkPlayers = this.getChunkPlayers(chunkX, chunkZ).values().toArray(new Player[0]);
                 if (chunkPlayers.length > 0) {
                     for (DataPacket pk : this.chunkPackets.get(index)) {
-                        Server.broadcastPacket(chunkPlayers, pk);
+                        // Particles can be protocol dependent.
+                        if ((pk instanceof LevelEventPacket) && (((LevelEventPacket) pk).evid == LevelEventPacket.EVENT_PARTICLE_SPAWN)) {
+                            Server.broadcastPacket((Player[])Arrays.stream(chunkPlayers).filter(p -> p.getProtocolVersion() == pk.getProtocolVersion()).toArray(), pk);
+                        } else {
+                            Server.broadcastPacket(chunkPlayers, pk);
+                        }
                     }
                 }
             }
