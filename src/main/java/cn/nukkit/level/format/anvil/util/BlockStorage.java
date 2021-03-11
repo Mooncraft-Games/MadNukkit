@@ -2,7 +2,6 @@ package cn.nukkit.level.format.anvil.util;
 
 import cn.nukkit.level.GlobalBlockPalette;
 import cn.nukkit.level.util.PalettedBlockStorage;
-import cn.nukkit.network.protocol.ProtocolInfo;
 import cn.nukkit.utils.BinaryStream;
 import com.google.common.base.Preconditions;
 

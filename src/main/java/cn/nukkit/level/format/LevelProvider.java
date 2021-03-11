@@ -16,7 +16,7 @@ public interface LevelProvider {
     byte ORDER_YZX = 0;
     byte ORDER_ZXY = 1;
 
-    AsyncTask requestChunkTask(int X, int Z);
+    AsyncTask requestChunkTask(int X, int Z, int[] protocols);
 
     String getPath();
 

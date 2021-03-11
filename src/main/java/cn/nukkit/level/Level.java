@@ -2658,14 +2658,13 @@ public class Level implements ChunkManager, Metadatable {
         this.chunkSendQueue.get(index).put(player.getLoaderId(), player);
     }
 
-    private void sendChunk(int x, int z, long index, DataPacket packet) {
+    private void sendChunk(int x, int z, long index, DataPacket packet, int protocol) {
         if (this.chunkSendTasks.contains(index)) {
             for (Player player : this.chunkSendQueue.get(index).values()) {
-                if (player.isConnected() && player.usedChunks.containsKey(index)) {
+                if (player.isConnected() && player.usedChunks.containsKey(index) && player.getProtocolVersion() == protocol) {
                     player.sendChunk(x, z, packet);
                 }
             }
-
             this.chunkSendQueue.remove(index);
             this.chunkSendTasks.remove(index);
         }
@@ -2677,19 +2676,27 @@ public class Level implements ChunkManager, Metadatable {
             if (this.chunkSendTasks.contains(index)) {
                 continue;
             }
+
+            int[] protocols = this.chunkSendQueue.get(index).values()
+                    .stream().mapToInt(Player::getProtocolVersion)
+                    .toArray();
+
             int x = getHashX(index);
             int z = getHashZ(index);
             this.chunkSendTasks.add(index);
+
             BaseFullChunk chunk = getChunk(x, z);
             if (chunk != null) {
                 BatchPacket packet = chunk.getChunkPacket();
                 if (packet != null) {
-                    this.sendChunk(x, z, index, packet);
+                    for (int protocol : protocols) {
+                        this.sendChunk(x, z, index, packet, protocol);
+                    }
                     continue;
                 }
             }
             this.timings.syncChunkSendPrepareTimer.startTiming();
-            AsyncTask task = this.provider.requestChunkTask(x, z);
+            AsyncTask task = this.provider.requestChunkTask(x, z, protocols);
             if (task != null) {
                 this.server.getScheduler().scheduleAsyncTask(task);
             }
@@ -2698,26 +2705,28 @@ public class Level implements ChunkManager, Metadatable {
         this.timings.syncChunkSendTimer.stopTiming();
     }
 
-    public void chunkRequestCallback(long timestamp, int x, int z, int subChunkCount, Map<Integer, byte[]> protocolChunks) {
+    public void chunkRequestCallback(long timestamp, int x, int z, int subChunkCount, byte[] payload, int protocol) {
         this.timings.syncChunkSendTimer.startTiming();
         long index = Level.chunkHash(x, z);
 
         if (this.cacheChunks) {
-            BatchPacket data = Player.getChunkCacheFromData(x, z, subChunkCount, protocolChunks.get(ProtocolInfo.CURRENT_PROTOCOL));
+            BatchPacket data = Player.getChunkCacheFromData(x, z, subChunkCount, payload);
             BaseFullChunk chunk = getChunk(x, z, false);
             if (chunk != null && chunk.getChanges() <= timestamp) {
                 chunk.setChunkPacket(data);
             }
-            this.sendChunk(x, z, index, data);
+            this.sendChunk(x, z, index, data, protocol);
             this.timings.syncChunkSendTimer.stopTiming();
             return;
         }
 
         if (this.chunkSendTasks.contains(index)) {
-            for (Player player : this.chunkSendQueue.get(index).values()) {
-                if (player.isConnected() && player.usedChunks.containsKey(index)) {
-                    // TODO: change payload to differ depending on protocol required
-                    player.sendChunk(x, z, subChunkCount, protocolChunks.get(player.getProtocolVersion()));
+            Iterator<Player> playerIterator = this.chunkSendQueue.get(index).values().iterator();
+            while (playerIterator.hasNext()) {
+                Player player = playerIterator.next();
+                if (player.isConnected() && player.usedChunks.containsKey(index) && (player.getProtocolVersion() == protocol || protocol == -1)) {
+                    player.sendChunk(x, z, subChunkCount, payload);
+                    playerIterator.remove();
                 }
             }
 

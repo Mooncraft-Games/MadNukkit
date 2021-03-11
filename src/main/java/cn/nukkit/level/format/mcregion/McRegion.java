@@ -97,7 +97,7 @@ public class McRegion extends BaseLevelProvider {
     }
 
     @Override
-    public AsyncTask requestChunkTask(int x, int z) throws ChunkException {
+    public AsyncTask requestChunkTask(int x, int z, int[] protocols) throws ChunkException {
         BaseFullChunk chunk = this.getChunk(x, z, false);
         if (chunk == null) {
             throw new ChunkException("Invalid Chunk Sent");

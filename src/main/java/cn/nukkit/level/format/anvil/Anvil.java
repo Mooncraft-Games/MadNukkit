@@ -106,7 +106,7 @@ public class Anvil extends BaseLevelProvider {
     }
 
     @Override
-    public AsyncTask requestChunkTask(int x, int z) throws ChunkException {
+    public AsyncTask requestChunkTask(int x, int z, int[] protocols) throws ChunkException {
         Chunk chunk = (Chunk) this.getChunk(x, z, false);
         if (chunk == null) {
             throw new ChunkException("Invalid Chunk Set");
@@ -132,7 +132,6 @@ public class Anvil extends BaseLevelProvider {
             }
         }
 
-        BinaryStream stream = ThreadCache.binaryStream.get().reset();
         int count = 0;
         cn.nukkit.level.format.ChunkSection[] sections = chunk.getSections();
         for (int i = sections.length - 1; i >= 0; i--) {
@@ -142,25 +141,18 @@ public class Anvil extends BaseLevelProvider {
             }
         }
 
-        byte[] baseInitStream = stream.getBuffer();
-
-        Map<Integer, byte[]> protocolChunks = new HashMap<>();
-        for (int protocol : ProtocolInfo.SUPPORTED_PROTOCOLS) {
-            BinaryStream protocolStream = ThreadCache.binaryStream.get().reset();
-            protocolStream.setBuffer(baseInitStream);
+        for (int protocol : protocols) {
+            BinaryStream stream = ThreadCache.binaryStream.get().reset();
             for (int i = 0; i < count; i++) {
-                sections[i].writeTo(protocolStream, protocol);
+                sections[i].writeTo(stream, protocol);
             }
 
-            protocolStream.put(chunk.getBiomeIdArray());
-            protocolStream.putByte((byte) 0); // Border blocks
-            protocolStream.put(blockEntities);
+            stream.put(chunk.getBiomeIdArray());
+            stream.putByte((byte) 0); // Border blocks
+            stream.put(blockEntities);
 
-            protocolChunks.put(protocol, protocolStream.get());
+            this.getLevel().chunkRequestCallback(timestamp, x, z, count, stream.get(), protocol);
         }
-
-        // TODO: chunkRequestCallback with the map
-        this.getLevel().chunkRequestCallback(timestamp, x, z, count, protocolChunks);
 
         return null;
     }

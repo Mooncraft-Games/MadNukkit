@@ -163,7 +163,7 @@ public class LevelDB implements LevelProvider {
     }
 
     @Override
-    public AsyncTask requestChunkTask(int x, int z) {
+    public AsyncTask requestChunkTask(int x, int z, int[] protocols) {
         Chunk chunk = this.getChunk(x, z, false);
         if (chunk == null) {
             throw new ChunkException("Invalid Chunk sent");
@@ -206,10 +206,7 @@ public class LevelDB implements LevelProvider {
             }
         }
 
-        Map<Integer, byte[]> protocolChunks = new HashMap<>();
-        protocolChunks.put(ProtocolInfo.CURRENT_PROTOCOL, stream.getBuffer());
-
-        this.getLevel().chunkRequestCallback(timestamp, x, z, 16, protocolChunks);
+        this.getLevel().chunkRequestCallback(timestamp, x, z, 16, stream.getBuffer(), -1);
 
         return null;
     }
