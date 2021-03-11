@@ -15,8 +15,11 @@ public class DestroyBlockParticle extends Particle {
 
     protected final int data;
 
+    protected final Block block;  // protocol support
+
     public DestroyBlockParticle(Vector3 pos, Block block) {
         super(pos.x, pos.y, pos.z);
+        this.block = block;
         this.data = GlobalBlockPalette.getOrCreateRuntimeId(ProtocolInfo.CURRENT_PROTOCOL, block.getId(), block.getDamage());
     }
 
@@ -27,7 +30,7 @@ public class DestroyBlockParticle extends Particle {
         pk.x = (float) this.x;
         pk.y = (float) this.y;
         pk.z = (float) this.z;
-        pk.data = this.data;
+        pk.data = GlobalBlockPalette.getOrCreateRuntimeId(ProtocolInfo.CURRENT_PROTOCOL, this.block.getId(), this.block.getDamage());
 
         return new DataPacket[]{pk};
     }

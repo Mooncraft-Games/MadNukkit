@@ -41,8 +41,33 @@ public class AvailableCommandsPacket extends DataPacket {
     public static final int ARG_TYPE_JSON = 50;
     public static final int ARG_TYPE_COMMAND = 63;
 
+    private final static Map<Integer, Map<Integer, Integer>> protocolArgConverisons = new HashMap<>();
+
     public Map<String, CommandDataVersions> commands;
     public final Map<String, List<String>> softEnums = new HashMap<>();
+
+    static {
+
+        Map<Integer, Integer> protocol419and422Support = new HashMap<>();
+        protocol419and422Support.put(ARG_TYPE_FLOAT, 3);
+        protocol419and422Support.put(ARG_TYPE_VALUE, 3);
+        protocol419and422Support.put(ARG_TYPE_WILDCARD_INT, 4);
+        protocol419and422Support.put(ARG_TYPE_OPERATOR, 5);
+        protocol419and422Support.put(ARG_TYPE_TARGET, 6);
+        protocol419and422Support.put(ARG_TYPE_WILDCARD_TARGET, 7);
+        protocol419and422Support.put(ARG_TYPE_FILE_PATH, 15);
+        protocol419and422Support.put(ARG_TYPE_STRING, 31);
+        protocol419and422Support.put(ARG_TYPE_BLOCK_POSITION, 39);
+        protocol419and422Support.put(ARG_TYPE_POSITION, 40);
+        protocol419and422Support.put(ARG_TYPE_MESSAGE, 43);
+        protocol419and422Support.put(ARG_TYPE_RAWTEXT, 45);
+        protocol419and422Support.put(ARG_TYPE_JSON, 49);
+        protocol419and422Support.put(ARG_TYPE_COMMAND, 56);
+
+        protocolArgConverisons.put(ProtocolInfo.PROTOCOL_VERSION_1_16_200, protocol419and422Support);
+        protocolArgConverisons.put(ProtocolInfo.PROTOCOL_VERSION_1_16_100, protocol419and422Support);
+
+    }
 
     @Override
     public byte pid() {
@@ -135,6 +160,7 @@ public class AvailableCommandsPacket extends DataPacket {
 
             putLInt(data.aliases == null ? -1 : enums.indexOf(data.aliases));
 
+            Map<Integer, Integer> protocolCommandParamConversions = protocolArgConverisons.getOrDefault(this.protocol, null);
             putUnsignedVarInt(data.overloads.size());
             for (CommandOverload overload : data.overloads.values()) {
                 putUnsignedVarInt(overload.input.parameters.length);
@@ -156,6 +182,10 @@ public class AvailableCommandsPacket extends DataPacket {
                         } else {
                             type |= parameter.type.getId();
                         }
+                    }
+
+                    if (protocolCommandParamConversions != null && protocolCommandParamConversions.containsKey(type)) {
+                        type = protocolCommandParamConversions.get(type);
                     }
 
                     putLInt(type);
