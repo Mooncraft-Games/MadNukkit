@@ -664,17 +664,17 @@ public class Server {
     }
 
     public static void broadcastPacket(Collection<Player> players, DataPacket packet) {
-        packet.tryEncode();
-
         for (Player player : players) {
+            packet.setProtocolVersion(player.getProtocolVersion());
+            packet.tryEncode(true);
             player.dataPacket(packet);
         }
     }
 
     public static void broadcastPacket(Player[] players, DataPacket packet) {
-        packet.tryEncode();
-
         for (Player player : players) {
+            packet.setProtocolVersion(player.getProtocolVersion());
+            packet.tryEncode(true);
             player.dataPacket(packet);
         }
     }

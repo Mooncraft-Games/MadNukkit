@@ -32,6 +32,15 @@ public abstract class DataPacket extends BinaryStream implements Cloneable {
         }
     }
 
+    public final void tryEncode(boolean runReset) {
+        if (runReset) {
+            this.setBuffer(new byte[0]);
+            this.reset();
+            this.isEncoded = false;
+        }
+        this.tryEncode();
+    }
+
     @Override
     public DataPacket reset() {
         super.reset();
