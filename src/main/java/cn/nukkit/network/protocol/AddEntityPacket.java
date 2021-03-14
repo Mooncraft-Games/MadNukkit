@@ -1,6 +1,7 @@
 package cn.nukkit.network.protocol;
 
 import cn.nukkit.entity.Attribute;
+import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.data.EntityMetadata;
 import cn.nukkit.entity.item.*;
 import cn.nukkit.entity.mob.*;
@@ -175,7 +176,7 @@ public class AddEntityPacket extends DataPacket {
         this.putLFloat(this.yaw);
         this.putLFloat(this.headYaw);
         this.putAttributeList(this.attributes);
-        this.put(Binary.writeMetadata(this.metadata));
+        this.put(Binary.writeMetadata(Entity.getProtocolMetadata(this.metadata, this.protocol)));
         this.putUnsignedVarInt(this.links.length);
         for (EntityLink link : links) {
             putEntityLink(link);

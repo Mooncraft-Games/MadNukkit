@@ -1088,7 +1088,7 @@ public abstract class Entity extends Location implements Metadatable {
         }
     }
 
-    private static EntityMetadata getProtocolMetadata(EntityMetadata metadata, int targetProtocol) {
+    public static EntityMetadata getProtocolMetadata(EntityMetadata metadata, int targetProtocol) {
         Map<Integer, EntityData> dataMap = metadata.getMap();
         int currentProtocol = ProtocolInfo.CURRENT_PROTOCOL;
         while (currentProtocol != targetProtocol) {
