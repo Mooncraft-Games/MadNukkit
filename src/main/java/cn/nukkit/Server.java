@@ -671,9 +671,6 @@ public class Server {
 
     public static void broadcastPacket(Player[] players, DataPacket packet) {
         for (Player player : players) {
-            if (packet instanceof PlayerListPacket) {
-                player.sendMessage("b" + packet.getProtocolVersion() + packet.isEncoded);
-            }
             player.dataPacket(packet);
         }
     }
