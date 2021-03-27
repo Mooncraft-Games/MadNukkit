@@ -665,16 +665,15 @@ public class Server {
 
     public static void broadcastPacket(Collection<Player> players, DataPacket packet) {
         for (Player player : players) {
-            packet.setProtocolVersion(player.getProtocolVersion());
-            packet.tryEncode(true);
             player.dataPacket(packet);
         }
     }
 
     public static void broadcastPacket(Player[] players, DataPacket packet) {
         for (Player player : players) {
-            packet.setProtocolVersion(player.getProtocolVersion());
-            packet.tryEncode(true);
+            if (packet instanceof PlayerListPacket) {
+                player.sendMessage("b" + packet.getProtocolVersion() + packet.isEncoded);
+            }
             player.dataPacket(packet);
         }
     }

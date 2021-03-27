@@ -217,9 +217,12 @@ public class RakNetInterface implements RakNetServerListener, AdvancedSourceInte
         NukkitRakNetSession session = this.sessions.get(player.getSocketAddress());
 
         if (session != null) {
-            packet.setProtocolVersion(player.getProtocolVersion());
-            packet.tryEncode();
-            session.outbound.offer(packet);
+            // We clone it because in some cases, some packets are sent to all players using the same object
+            // and for packets with version specific changes, it can cause issues where some players get the wrong protocol packet
+            DataPacket clonedPacket = packet.clone();
+            clonedPacket.setProtocolVersion(player.getProtocolVersion());
+            clonedPacket.tryEncode();
+            session.outbound.offer(clonedPacket);
         }
 
         return null;
