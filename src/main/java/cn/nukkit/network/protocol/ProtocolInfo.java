@@ -17,7 +17,21 @@ public interface ProtocolInfo {
      */
     int CURRENT_PROTOCOL = dynamic(431);
 
-    List<Integer> SUPPORTED_PROTOCOLS = Ints.asList(CURRENT_PROTOCOL);
+    /**
+     * Old supported protocols
+     */
+    int VERSION_1_16_100_PROTOCOL = dynamic(419);
+    int VERSION_1_16_200_PROTOCOL = dynamic(422);
+    int VERSION_1_16_210_PROTOCOL = dynamic(428);
+    int VERSION_1_16_220_PROTOCOL = dynamic(431);
+    int VERSION_1_17_PROTOCOL = dynamic(440);
+
+    List<Integer> SUPPORTED_PROTOCOLS = Ints.asList(
+            CURRENT_PROTOCOL,
+            VERSION_1_16_210_PROTOCOL,
+            VERSION_1_16_200_PROTOCOL,
+            VERSION_1_16_100_PROTOCOL
+    );
 
     String MINECRAFT_VERSION = dynamic("v1.16.220");
     String MINECRAFT_VERSION_NETWORK = dynamic("1.16.220");
